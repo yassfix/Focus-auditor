@@ -30,6 +30,11 @@ exports.tracker = onRequest({ secrets: ["FOCUSMATE_API_KEY"] }, async (req, res)
     
     if (data.sessions) {
       data.sessions.forEach(session => {
+        // Skip this session if there is no partner (solo/unmatched)
+        if (!session.users || session.users.length <= 1) {
+          return; 
+        }
+
         // Focusmate API returns duration in milliseconds
         const durationMinutes = session.duration / 60000;
         totalMinutes += durationMinutes;
@@ -40,17 +45,13 @@ exports.tracker = onRequest({ secrets: ["FOCUSMATE_API_KEY"] }, async (req, res)
         const timeString = startTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' });
         const dateString = startTime.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
         
-        // Extract partner info (Focusmate API provides userId, but often omits names in this endpoint)
-        let partnerName = 'Solo / Unmatched';
-        if (session.users && session.users.length > 1) {
-          const partner = session.users[1];
-          if (partner.name) {
-            partnerName = partner.name;
-          } else if (partner.isFavorite) {
-            partnerName = 'Favorite Partner (Matched)';
-          } else {
-            partnerName = 'Partner (Matched)';
-          }
+        // Extract partner info 
+        let partnerName = 'Partner (Matched)';
+        const partner = session.users[1];
+        if (partner.name) {
+          partnerName = partner.name;
+        } else if (partner.isFavorite) {
+          partnerName = 'Favorite Partner (Matched)';
         }
 
         // Build list item
@@ -149,7 +150,7 @@ exports.tracker = onRequest({ secrets: ["FOCUSMATE_API_KEY"] }, async (req, res)
               <h3 class="text-[10px] font-bold text-gray-400 tracking-widest uppercase">Session History</h3>
             </div>
             <div class="px-3 py-2 max-h-[250px] overflow-y-auto custom-scrollbar">
-              ${sessionsListHtml || '<div class="py-6 text-gray-500 text-sm text-center font-medium">No sessions recorded this week.</div>'}
+              ${sessionsListHtml || '<div class="py-6 text-gray-500 text-sm text-center font-medium">No valid matched sessions recorded this week.</div>'}
             </div>
           </div>
 
