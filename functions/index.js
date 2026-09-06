@@ -40,10 +40,17 @@ exports.tracker = onRequest({ secrets: ["FOCUSMATE_API_KEY"] }, async (req, res)
         const timeString = startTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' });
         const dateString = startTime.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
         
-        // Extract partner name from the users array
+        // Extract partner info (Focusmate API provides userId, but often omits names in this endpoint)
         let partnerName = 'Solo / Unmatched';
-        if (session.users && session.users.length > 1 && session.users[1].name) {
-          partnerName = session.users[1].name;
+        if (session.users && session.users.length > 1) {
+          const partner = session.users[1];
+          if (partner.name) {
+            partnerName = partner.name;
+          } else if (partner.isFavorite) {
+            partnerName = 'Favorite Partner (Matched)';
+          } else {
+            partnerName = 'Partner (Matched)';
+          }
         }
 
         // Build list item
